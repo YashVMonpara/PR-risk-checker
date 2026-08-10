@@ -1,4 +1,4 @@
-import { postReview, buildSummary } from '../src/comment';
+import { postReview, buildSummary, buildFooter } from '../src/comment';
 import { ChangedFile, RiskFinding } from '../src/types';
 
 const PATCH = '@@ -1,2 +1,4 @@\n keep\n+risky one\n+risky two\n keep2';
@@ -140,6 +140,57 @@ describe('postReview', () => {
     const result = await postReview(octokit as never, 'o', 'r', 1, 'sha', [inline], files());
     expect(result.posted).toBe(false);
     expect(result.error).toContain('403');
+  });
+});
+
+describe('buildFooter', () => {
+  it('links to the workflow run when the env provides one', () => {
+    const footer = buildFooter({
+      GITHUB_SERVER_URL: 'https://github.com',
+      GITHUB_REPOSITORY: 'acme/widgets',
+      GITHUB_RUN_ID: '12345',
+    } as NodeJS.ProcessEnv);
+
+    expect(footer).toContain('https://github.com/acme/widgets/actions/runs/12345');
+  });
+
+  it('falls back to the repository link when there is no run id', () => {
+    const footer = buildFooter({
+      GITHUB_SERVER_URL: 'https://github.com',
+      GITHUB_REPOSITORY: 'acme/widgets',
+    } as NodeJS.ProcessEnv);
+
+    expect(footer).toContain('https://github.com/acme/widgets');
+    expect(footer).not.toContain('/actions/runs/');
+  });
+
+  it('honours GitHub Enterprise server URLs', () => {
+    const footer = buildFooter({
+      GITHUB_SERVER_URL: 'https://ghe.internal',
+      GITHUB_REPOSITORY: 'acme/widgets',
+      GITHUB_RUN_ID: '7',
+    } as NodeJS.ProcessEnv);
+
+    expect(footer).toContain('https://ghe.internal/acme/widgets/actions/runs/7');
+  });
+
+  it('emits no link at all outside a workflow', () => {
+    const footer = buildFooter({} as NodeJS.ProcessEnv);
+
+    expect(footer).toBe('<sub>🤖 Posted by PR Risk Reviewer</sub>');
+    expect(footer).not.toContain('](');
+  });
+
+  it('never points at the unpublished Marketplace listing', () => {
+    const envs = [
+      {},
+      { GITHUB_REPOSITORY: 'acme/widgets' },
+      { GITHUB_REPOSITORY: 'acme/widgets', GITHUB_RUN_ID: '1' },
+    ];
+
+    for (const env of envs) {
+      expect(buildFooter(env as NodeJS.ProcessEnv)).not.toContain('marketplace');
+    }
   });
 });
 

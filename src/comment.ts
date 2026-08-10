@@ -8,7 +8,29 @@ const SEVERITY_LABEL: Record<Severity, string> = {
   error: '🚨 Error',
 };
 
-const FOOTER = '<sub>🤖 Posted by [PR Risk Reviewer](https://github.com/marketplace/actions/pr-risk-reviewer)</sub>';
+/**
+ * Footer appended to every comment.
+ *
+ * The link is derived from the workflow environment so it always points at
+ * something real: the run that produced the comment, or failing that the repo
+ * hosting the action. It deliberately does NOT hardcode a Marketplace URL —
+ * that 404s until the action is actually published there.
+ */
+export function buildFooter(env: NodeJS.ProcessEnv = process.env): string {
+  const server = env.GITHUB_SERVER_URL || 'https://github.com';
+  const repo = env.GITHUB_REPOSITORY;
+  const runId = env.GITHUB_RUN_ID;
+
+  if (repo && runId) {
+    return `<sub>🤖 Posted by PR Risk Reviewer · [view run](${server}/${repo}/actions/runs/${runId})</sub>`;
+  }
+
+  if (repo) {
+    return `<sub>🤖 Posted by PR Risk Reviewer · [${repo}](${server}/${repo})</sub>`;
+  }
+
+  return '<sub>🤖 Posted by PR Risk Reviewer</sub>';
+}
 
 export interface PostResult {
   posted: boolean;
@@ -27,14 +49,16 @@ function renderInline(finding: RiskFinding): string {
     '',
     finding.message,
     '',
-    FOOTER,
+    buildFooter(),
   ].join('\n');
 }
 
 /** Builds the markdown body for the review itself. */
 export function buildSummary(findings: RiskFinding[], unmapped: RiskFinding[] = []): string {
+  const footer = buildFooter();
+
   if (findings.length === 0) {
-    return `## PR Risk Reviewer\n\n✅ No risks detected in this pull request.\n\n${FOOTER}`;
+    return `## PR Risk Reviewer\n\n✅ No risks detected in this pull request.\n\n${footer}`;
   }
 
   const counts: Record<Severity, number> = { error: 0, warning: 0, info: 0 };
@@ -68,7 +92,7 @@ export function buildSummary(findings: RiskFinding[], unmapped: RiskFinding[] = 
     lines.push('');
   }
 
-  lines.push(FOOTER);
+  lines.push(footer);
   return lines.join('\n');
 }
 
