@@ -19,7 +19,7 @@
     "e2e": "node scripts/local-run.js",
     "e2e:mock-llm": "node scripts/e2e-mock-llm.js",
     "e2e:lmstudio": "node scripts/local-run.js --llm lmstudio",
-    "package": "npm run build"
+    "panel": "npx --prefix . http-server panel -p 8877 --cors >/dev/null 2>&1"
   },
   "keywords": [
     "github-action",

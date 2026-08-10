@@ -224,6 +224,40 @@ npm run typecheck
 
 ---
 
+## Setup wizard (no GitHub required)
+
+Hand-writing workflows is where most people get this wrong — usually the
+`localhost` trap (a hosted runner can't reach your laptop's LM Studio) or
+inlining a secret. `panel/` is a single static page that guides you through the
+choices with inline hints and emits a correct `pr-risk-review.yml`. It also
+**probes your LM Studio instance and auto-fills the loaded model list** — so you
+never type a model ID from memory.
+
+```bash
+npm run panel          # serves panel/ at http://localhost:8877
+```
+
+Open that URL. Nothing is uploaded: the only network call is the LM Studio
+probe you trigger yourself, and secrets are emitted as `${{ secrets.* }}`
+references, never inlined.
+
+What it does:
+
+- **Step-by-step backend choice** (rules-only / OpenAI / LM Studio / custom) with a plain-language trade-off for each.
+- **Live model discovery** — "Test connection" hits your `/v1/models` and populates the dropdown, auto-selecting a chat model (embedding models are filtered out).
+- **Contextual hints** — CORS gotchas, the `localhost` runner warning, per-backend cost estimates, and a merge-gate caveat.
+- **Always-correct output** — if you pick LM Studio but leave the runner on GitHub-hosted, the next-steps checklist flags it; the YAML never includes a bare API key.
+
+The wizard needs LM Studio started with CORS enabled to probe from the browser:
+
+```bash
+lms server start --cors
+```
+
+(The `--cors` flag affects only the in-browser wizard, not the action itself.)
+
+---
+
 ## How it works
 
 ```
@@ -278,6 +312,7 @@ scripts/
   copy-wasm.js     vendors grammars into dist/
   demo-pr.sh       opens a real demo PR
 fixtures/demo-pr/  base/head files and git-generated patches
+panel/              static setup wizard (index.html, panel.css, panel.js)
 dist/              committed build (index.js + 4 WASM files)
 ```
 
