@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build, lint & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit + integration tests
+        run: npm test -- --coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+
+  dist-up-to-date:
+    name: dist/ is up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Rebuild the bundle
+        run: npm run build
+
+      - name: Fail if dist/ differs from the committed build
+        run: |
+          if [ -n "$(git status --porcelain dist/)" ]; then
+            echo "::error::dist/ is out of date. Run 'npm run build' and commit the result."
+            git --no-pager diff --stat dist/
+            exit 1
+          fi
+          echo "dist/ matches the committed build."
+
+  e2e-simulation:
+    name: End-to-end simulation (mock GitHub API)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build the action
+        run: npm run build
+
+      - name: Run the built action against a mock GitHub API
+        run: npm run e2e
+
+      - name: Run with a mocked OpenAI-compatible LLM server
+        run: npm run e2e:mock-llm
+
+  action-smoke-test:
+    name: Action smoke test (uses ./)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run this action on itself
+        uses: ./
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          risk_threshold: warning

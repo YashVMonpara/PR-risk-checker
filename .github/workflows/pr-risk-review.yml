@@ -1,0 +1,29 @@
+name: PR Risk Review (self-demo)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Review this PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run PR Risk Reviewer
+        uses: ./
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Optional. Leave unset to run deterministic rules only.
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          # Optional. Point at any OpenAI-compatible endpoint (e.g. a self-hosted
+          # runner reaching LM Studio at http://localhost:1234/v1).
+          llm_api_base_url: ${{ secrets.LLM_API_BASE_URL }}
+          model: ${{ vars.LLM_MODEL || 'gpt-4o-mini' }}
+          risk_threshold: warning
+          fail_on_error: 'false'

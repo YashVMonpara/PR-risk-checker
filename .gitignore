@@ -1,0 +1,12 @@
+node_modules/
+lib/
+coverage/
+*.log
+.DS_Store
+.env
+.env.local
+*.tsbuildinfo
+tmp/
+.local-run/
+
+# dist/ is intentionally COMMITTED — GitHub Actions runs the pre-built bundle.

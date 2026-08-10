@@ -1,0 +1,56 @@
+{
+  "name": "pr-risk-reviewer",
+  "version": "1.0.0",
+  "description": "GitHub Action that analyzes PR diffs for risky changes using tree-sitter AST analysis, deterministic rules, and an LLM (OpenAI or LM Studio).",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "ncc build src/index.ts -o dist --minify && node scripts/copy-wasm.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src __tests__ --ext .ts",
+    "format": "prettier --write \"{src,__tests__,scripts}/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "local-run": "node scripts/local-run.js",
+    "e2e": "node scripts/local-run.js",
+    "e2e:mock-llm": "node scripts/e2e-mock-llm.js",
+    "e2e:lmstudio": "node scripts/local-run.js --llm lmstudio",
+    "package": "npm run build"
+  },
+  "keywords": [
+    "github-action",
+    "code-review",
+    "tree-sitter",
+    "llm",
+    "lm-studio",
+    "openai",
+    "static-analysis"
+  ],
+  "dependencies": {
+    "@actions/core": "1.11.1",
+    "@actions/github": "6.0.1",
+    "openai": "^7.4.0",
+    "web-tree-sitter": "0.26.12"
+  },
+  "overrides": {
+    "undici": "^7.29.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vercel/ncc": "^0.44.1",
+    "@vscode/tree-sitter-wasm": "0.3.1",
+    "eslint": "^8.57.0",
+    "jest": "^30.0.0",
+    "nock": "^14.0.0",
+    "prettier": "^3.3.0",
+    "ts-jest": "^29.2.0",
+    "typescript": "^5.6.0"
+  }
+}

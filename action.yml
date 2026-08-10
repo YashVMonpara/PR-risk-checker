@@ -1,0 +1,47 @@
+name: 'PR Risk Reviewer'
+description: 'Analyzes PR diffs for risky changes using AST and LLM (supports OpenAI & LM Studio).'
+author: 'pr-risk-reviewer'
+
+branding:
+  icon: 'shield'
+  color: 'orange'
+
+inputs:
+  github_token:
+    description: 'GitHub token used to read the PR and post review comments.'
+    required: false
+    default: ${{ github.token }}
+  openai_api_key:
+    description: 'OpenAI API key. Leave empty if using LM Studio without auth.'
+    required: false
+    default: ''
+  llm_api_base_url:
+    description: 'Custom LLM API base URL (e.g. http://localhost:1234/v1 for LM Studio). If set, overrides the default OpenAI endpoint.'
+    required: false
+    default: ''
+  model:
+    description: 'LLM model name (any OpenAI-compatible model).'
+    required: false
+    default: 'gpt-4o-mini'
+  risk_threshold:
+    description: 'Minimum severity to report: info, warning, or error.'
+    required: false
+    default: 'warning'
+  fail_on_error:
+    description: 'Fail the action run when any error-severity finding is reported.'
+    required: false
+    default: 'false'
+  max_llm_calls:
+    description: 'Maximum number of findings sent to the LLM for triage (cost/latency guard).'
+    required: false
+    default: '10'
+
+outputs:
+  findings_count:
+    description: 'Number of findings reported on the pull request.'
+  summary:
+    description: 'Markdown summary of the findings.'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
