@@ -16,13 +16,13 @@ That's the whole setup. With no LLM configured it runs the deterministic rules o
 
 ## What it catches
 
-| Rule | Severity | What it looks for |
-| --- | --- | --- |
-| `security-anti-patterns` | 🚨 error | `eval()`, `new Function()`, `innerHTML =`, `dangerouslySetInnerHTML`, shell commands built by concatenation, SQL string concatenation, hardcoded secrets |
-| `breaking-signature-change` | ⚠️ warning | An **exported** function's parameter list changed while no test file was touched (detected via AST, not regex) |
-| `missing-tests` | ⚠️ warning | A source file changed but the PR contains no test file |
-| `dependency-lockfile-mismatch` | ⚠️ warning | `package.json` dependencies changed without a lockfile update (or the reverse) |
-| `large-diff-thin-description` | ℹ️ info | >500 changed lines with a PR description under 100 characters |
+| Rule                             | Severity     | What it looks for                                                                                                                                                |
+| -------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `security-anti-patterns`       | 🚨 error     | `eval()`, `new Function()`, `innerHTML =`, `dangerouslySetInnerHTML`, shell commands built by concatenation, SQL string concatenation, hardcoded secrets |
+| `breaking-signature-change`    | ⚠️ warning | An**exported** function's parameter list changed while no test file was touched (detected via AST, not regex)                                              |
+| `missing-tests`                | ⚠️ warning | A source file changed but the PR contains no test file                                                                                                           |
+| `dependency-lockfile-mismatch` | ⚠️ warning | `package.json` dependencies changed without a lockfile update (or the reverse)                                                                                 |
+| `large-diff-thin-description`  | ℹ️ info    | >500 changed lines with a PR description under 100 characters                                                                                                    |
 
 Hardcoded-secret detection deliberately ignores comment lines and obvious placeholders (`xxx`, `your-key-here`, `changeme`, …) to keep the noise down.
 
@@ -69,26 +69,26 @@ A small local model confidently waving through an injection bug is exactly the f
 
 ## Configuration
 
-| Input | Required | Default | Description |
-| --- | --- | --- | --- |
-| `github_token` | yes | `${{ github.token }}` | Token used to read the PR and post the review. Needs `pull-requests: write`. |
-| `openai_api_key` | no | — | OpenAI API key. Leave empty when using LM Studio without auth. |
-| `llm_api_base_url` | no | — | Custom OpenAI-compatible base URL, e.g. `http://localhost:1234/v1`. Overrides the OpenAI endpoint. |
-| `model` | no | `gpt-4o-mini` | Model name. Any model your endpoint serves. |
-| `risk_threshold` | no | `warning` | Minimum severity to report: `info`, `warning`, or `error`. |
-| `fail_on_error` | no | `false` | Fail the workflow when error-severity findings exist. |
-| `max_llm_calls` | no | `10` | Cap on LLM calls per run (cost/time guard). |
+| Input                | Required | Default                 | Description                                                                                         |
+| -------------------- | -------- | ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `github_token`     | yes      | `${{ github.token }}` | Token used to read the PR and post the review. Needs `pull-requests: write`.                      |
+| `openai_api_key`   | no       | —                      | OpenAI API key. Leave empty when using LM Studio without auth.                                      |
+| `llm_api_base_url` | no       | —                      | Custom OpenAI-compatible base URL, e.g.`http://localhost:1234/v1`. Overrides the OpenAI endpoint. |
+| `model`            | no       | `gpt-4o-mini`         | Model name. Any model your endpoint serves.                                                         |
+| `risk_threshold`   | no       | `warning`             | Minimum severity to report:`info`, `warning`, or `error`.                                     |
+| `fail_on_error`    | no       | `false`               | Fail the workflow when error-severity findings exist.                                               |
+| `max_llm_calls`    | no       | `10`                  | Cap on LLM calls per run (cost/time guard).                                                         |
 
 **Outputs:** `findings_count`, `summary`.
 
 ### Which backend runs?
 
-| `openai_api_key` | `llm_api_base_url` | Result |
-| --- | --- | --- |
-| ❌ | ❌ | Deterministic rules only |
-| ✅ | ❌ | OpenAI |
-| ❌ | ✅ | LM Studio / compatible, no auth (key defaults to `lm-studio`) |
-| ✅ | ✅ | Custom endpoint that requires auth (proxy, vLLM, Together, …) |
+| `openai_api_key` | `llm_api_base_url` | Result                                                          |
+| ------------------ | -------------------- | --------------------------------------------------------------- |
+| ❌                 | ❌                   | Deterministic rules only                                        |
+| ✅                 | ❌                   | OpenAI                                                          |
+| ❌                 | ✅                   | LM Studio / compatible, no auth (key defaults to `lm-studio`) |
+| ✅                 | ✅                   | Custom endpoint that requires auth (proxy, vLLM, Together, …)  |
 
 ---
 
@@ -289,7 +289,7 @@ pull_request event
   └──────────────┘
 ```
 
-**Error handling.** Every stage degrades instead of crashing: AST failures fall back to text rules, LLM failures keep the deterministic message, and a `422` from GitHub (positions rejected because the diff moved) is retried as a summary-only review so the feedback still lands.
+**Error handling.** Every stage degrades instead of crashing: AST failures fall back to text rules, LLM failures keep the deterministic message, and a `422` from GitHub (positions rejected because the diff moved) is retried as a summary-only review so the feedback still lands..
 
 ---
 
