@@ -267,8 +267,10 @@ app.post('/api/post', requireToken, async (req, res) => {
   const token = tokenFor(req)!;
   const { owner, repo, pullNumber, headSha, findings } = req.body || {};
 
-  if (!owner || !repo || !pullNumber || !headSha || !Array.isArray(findings)) {
-    res.status(400).json({ error: 'owner, repo, pullNumber, headSha and findings are required.' });
+  // headSha is optional here: postToGitHub re-fetches the head SHA from GitHub
+  // itself, so we only validate the fields that are truly required.
+  if (!owner || !repo || !pullNumber || !Array.isArray(findings)) {
+    res.status(400).json({ error: 'owner, repo, pullNumber and findings are required.' });
     return;
   }
 

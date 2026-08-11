@@ -26,7 +26,14 @@ export interface AnalyzeParams {
 }
 
 export interface AnalyzeResult {
-  pr: { number: number; title: string; body: string; additions: number; deletions: number };
+  pr: {
+    number: number;
+    title: string;
+    body: string;
+    additions: number;
+    deletions: number;
+    headSha: string;
+  };
   findings: RiskFinding[];
   /** True when an LLM was consulted (vs deterministic rules only). */
   usedLLM: boolean;
@@ -64,6 +71,7 @@ export async function analyze(params: AnalyzeParams): Promise<AnalyzeResult> {
       body: pr.body,
       additions: pr.additions,
       deletions: pr.deletions,
+      headSha: pr.headSha,
     },
     findings,
     usedLLM: llmOptions !== null,
