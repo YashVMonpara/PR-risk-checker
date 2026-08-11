@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PR Risk Reviewer</title>
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="shield">🛡️</span> PR Risk Reviewer</div>
+    <div class="session" id="sessionBox"></div>
+  </header>
+
+  <main class="container" id="app">
+    <!-- Screen: connect -->
+    <section class="screen" id="screen-connect">
+      <h1>Review a pull request</h1>
+      <p class="lede">Connect a GitHub account, pick a repo and a PR, and run the same risk analysis the Action uses — inline findings, security flags, breaking changes.</p>
+
+      <div class="card" id="connectCard">
+        <label for="pat">GitHub personal access token</label>
+        <input type="password" id="pat" placeholder="ghp_… or github_pat_…" autocomplete="off" />
+        <p class="hint">Needs the <code>repo</code> scope. Stored only in your browser session — never written to disk or sent anywhere except GitHub. <a id="oauthLink" href="/api/auth/login" hidden>Or use OAuth →</a></p>
+        <button class="btn primary" id="connectBtn">Connect</button>
+        <div class="status" id="connectStatus"></div>
+      </div>
+
+      <div class="card alt" id="connectedCard" hidden>
+        <div class="ok">✓ Connected as <strong id="loginName"></strong></div>
+        <button class="btn ghost" id="logoutBtn">Disconnect</button>
+      </div>
+    </section>
+
+    <!-- Screen: pick -->
+    <section class="screen" id="screen-pick" hidden>
+      <div class="pick-grid">
+        <div class="card">
+          <label for="repoSearch">Repository</label>
+          <input type="text" id="repoSearch" placeholder="Search your repos…" autocomplete="off" />
+          <div class="list" id="repoList"></div>
+        </div>
+        <div class="card">
+          <label>Pull request</label>
+          <div class="list" id="pullList"><div class="empty">Select a repository first.</div></div>
+        </div>
+      </div>
+
+      <details class="card adv">
+        <summary>LLM triage (optional)</summary>
+        <p class="hint">Leave blank to run deterministic rules only. Use OpenAI, or an OpenAI-compatible endpoint (LM Studio).</p>
+        <div class="row">
+          <div class="field">
+            <label for="llmKey">API key</label>
+            <input type="password" id="llmKey" placeholder="sk-… (omit for LM Studio)" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="llmUrl">Base URL</label>
+            <input type="text" id="llmUrl" placeholder="http://localhost:1234/v1" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="llmModel">Model</label>
+            <input type="text" id="llmModel" placeholder="gpt-4o-mini" autocomplete="off" />
+          </div>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button class="btn primary" id="runBtn" disabled>Run review</button>
+        <span class="status" id="runStatus"></span>
+      </div>
+    </section>
+
+    <!-- Screen: results -->
+    <section class="screen" id="screen-results" hidden>
+      <div class="results-head">
+        <div>
+          <h2 id="resultsTitle"></h2>
+          <div class="meta" id="resultsMeta"></div>
+        </div>
+        <button class="btn" id="backBtn">← New review</button>
+      </div>
+      <div class="summary-bar" id="summaryBar"></div>
+      <div class="findings" id="findings"></div>
+      <div class="actions">
+        <button class="btn primary" id="postBtn">Post to GitHub</button>
+        <span class="status" id="postStatus"></span>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

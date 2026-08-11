@@ -19,7 +19,8 @@
     "e2e": "node scripts/local-run.js",
     "e2e:mock-llm": "node scripts/e2e-mock-llm.js",
     "e2e:lmstudio": "node scripts/local-run.js --llm lmstudio",
-    "panel": "node scripts/serve-panel.js 8877"
+    "panel": "node scripts/serve-panel.js 8877",
+    "web": "tsx watch web/server.ts"
   },
   "keywords": [
     "github-action",
@@ -33,9 +34,12 @@
   "dependencies": {
     "@actions/core": "1.11.1",
     "@actions/github": "6.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "left-pad": "^1.3.0",
     "openai": "^7.4.0",
-    "web-tree-sitter": "0.26.12",
-    "left-pad": "^1.3.0"
+    "tsx": "^4.23.12",
+    "web-tree-sitter": "0.26.12"
   },
   "overrides": {
     "undici": "^7.29.0"

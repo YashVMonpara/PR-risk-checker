@@ -293,6 +293,31 @@ pull_request event
 
 ---
 
+## Web app (companion UI)
+
+A small local web app that turns the engine into a point-and-click tool: **connect a GitHub account → pick a repo → pick a PR → run the review → read the findings → post them back**. It reuses the exact same analysis pipeline as the Action (`src/index.ts` → `analyzePullRequest`), so results are identical.
+
+```bash
+npm run web          # serves the app at http://localhost:3180
+```
+
+Open that URL. You can authenticate two ways:
+
+- **Personal access token** (default, no setup) — paste a PAT with the `repo` scope. It is stored only in the browser session and used solely to call GitHub from your machine.
+- **GitHub OAuth** — set `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` from `web/.env` (see `web/.env.example`) and register the callback `http://localhost:3180/api/auth/callback`.
+
+What the app does:
+
+- Lists your repositories (searchable) and their open PRs.
+- Runs rules-only or LLM triage (OpenAI or LM Studio) — same `llm_api_base_url` / `model` knobs as the Action.
+- Shows findings grouped by severity with inline location; the "Post to GitHub" button pushes them as a real review on the PR.
+
+> The app never stores data. The token lives in the session cookie; nothing is written to disk or sent anywhere except GitHub. For OAuth, register the app under your own account.
+
+The server (`web/server.ts`) and SPA (`web/public/`) are intentionally separate from the Action so the bundle stays self-contained for GitHub's runner.
+
+---
+
 ## Repository layout
 
 ```
