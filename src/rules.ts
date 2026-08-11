@@ -12,8 +12,18 @@ export function isTestFile(path: string): boolean {
   return TEST_PATTERN.test(path);
 }
 
+/** True for hand-written source files (excludes tests, fixtures, generated). */
 export function isSourceFile(path: string): boolean {
   return SOURCE_PATTERN.test(path) && !isTestFile(path);
+}
+
+/** Files we never treat as hand-written source (snapshots, fixtures, vendored). */
+const NON_SOURCE_PATTERN =
+  /(^|\/)(fixtures?|__fixtures__|snapshots?|__snapshots__|vendor|dist|build|coverage)\/|\.(snap|md|mdx|json|lock|txt|csv|yml|yaml|xml|html?)$/i;
+
+/** True for files the rules engine should scan as source code. */
+export function isAnalyzableSource(path: string): boolean {
+  return isSourceFile(path) && !NON_SOURCE_PATTERN.test(path);
 }
 
 /** Strips a line comment so we do not flag patterns mentioned in prose. */
@@ -81,6 +91,10 @@ const securityRule: Rule = {
   description: 'Detects dangerous constructs (eval, innerHTML, shell/SQL injection, secrets).',
   check(context) {
     const findings: RiskFinding[] = [];
+    // Only scan genuine source files — skip fixtures, snapshots, generated and
+    // documentation files, which frequently contain the matched tokens in prose
+    // or expected-output text (e.g. an "eval" appearing in a test fixture).
+    if (!isAnalyzableSource(context.file.filename)) return findings;
 
     for (const line of context.addedLines) {
       if (isCommentLine(line.content)) continue;
@@ -154,7 +168,7 @@ const missingTestsRule: Rule = {
     const { file, allFiles } = context;
 
     if (file.status === 'removed') return [];
-    if (!isSourceFile(file.filename)) return [];
+    if (!isAnalyzableSource(file.filename)) return [];
     if (allFiles.some((f) => isTestFile(f.filename))) return [];
 
     return [
