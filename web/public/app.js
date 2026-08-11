@@ -216,5 +216,113 @@
 
   $('backBtn').addEventListener('click', () => show('pick'));
 
+  // --- auto-fix flow ---
+  $('fixBtn').addEventListener('click', async () => {
+    if (!state.lastResult) return;
+    const st = $('runStatus');
+    st.className = 'status'; st.innerHTML = '<span class="spinner"></span> Generating safe fixes…';
+    const [owner, repo] = state.repo.split('/');
+    const llmKey = $('llmKey').value.trim();
+    const llmUrl = $('llmUrl').value.trim();
+    const llmModel = $('llmModel').value.trim();
+    const body = {
+      owner, repo,
+      headSha: state.lastResult.pr.headSha,
+      findings: state.lastResult.findings,
+      llm: { apiKey: llmKey, baseURL: llmUrl, model: llmModel || 'gpt-4o-mini' },
+    };
+    try {
+      const data = await api('/api/fix', { method: 'POST', body: JSON.stringify(body) });
+      state.fixPlans = data.plans;
+      renderFixes(data.plans);
+      show('fixes');
+      st.textContent = '';
+    } catch (e) {
+      st.className = 'status err'; st.textContent = e.message;
+    }
+  });
+
+  function renderFixes(plans) {
+    const ready = plans.filter((p) => p.status === 'ready').length;
+    const needs = plans.filter((p) => p.status === 'needs_input').length;
+    const other = plans.length - ready - needs;
+    $('fixesMeta').innerHTML =
+      `<span class="pill ok">${ready} ready</span>` +
+      (needs ? `<span class="pill warn">${needs} need input</span>` : '') +
+      (other ? `<span class="pill">${other} skipped/error</span>` : '') +
+      ' · review each, then apply';
+    const wrap = $('fixesList');
+    wrap.innerHTML = '';
+    if (!plans.length) { wrap.innerHTML = '<div class="card">No fixable findings.</div>'; return; }
+    for (const plan of plans) {
+      const el = document.createElement('div');
+      el.className = `fix-card ${plan.status}`;
+      const f = plan.finding;
+      const head =
+        `<div class="ftop"><span class="sev ${plan.status}">${plan.status}</span>` +
+        `<span class="cat">${esc(f.category)}</span>` +
+        `<span class="loc">${esc(plan.path)}</span></div>`;
+      const why = plan.reason ? `<div class="why">${esc(plan.reason)}</div>` : '';
+      let diff = '';
+      if (plan.proposal) {
+        const oldL = esc(plan.proposal.old_lines ? plan.proposal.old_lines : '');
+        const newL = esc(plan.proposal.new_lines ? plan.proposal.new_lines : '');
+        diff =
+          `<pre class="diff"><span class="del">- ${oldL}</span>` +
+          `<span class="add">+ ${newL}</span></pre>`;
+      }
+      const checkbox =
+        plan.status === 'ready'
+          ? `<label class="chk"><input type="checkbox" data-path="${esc(plan.path)}" checked /> approve</label>`
+          : plan.status === 'needs_input'
+          ? `<label class="chk"><input type="checkbox" data-path="${esc(plan.path)}" /> approve anyway</label>`
+          : '';
+      el.innerHTML = head + why + diff + checkbox;
+      wrap.appendChild(el);
+    }
+  }
+
+  $('fixBackBtn').addEventListener('click', () => show('results'));
+
+  function collectApproved() {
+    const paths = new Set();
+    document.querySelectorAll('#fixesList input[type=checkbox]:checked').forEach((c) => {
+      if (c.dataset.path) paths.add(c.dataset.path);
+    });
+    return [...paths];
+  }
+
+  async function doApply(allSafe) {
+    if (!state.fixPlans) return;
+    const st = $('applyStatus');
+    st.className = 'status'; st.innerHTML = '<span class="spinner"></span> Applying…';
+    const [owner, repo] = state.repo.split('/');
+    let approved = collectApproved();
+    if (allSafe) {
+      // Apply only 'ready' plans regardless of checkbox selection.
+      approved = state.fixPlans.filter((p) => p.status === 'ready').map((p) => p.path);
+    }
+    const body = {
+      owner, repo,
+      headSha: state.lastResult.pr.headSha,
+      pullNumber: state.pull,
+      plans: state.fixPlans,
+      approvedPaths: approved,
+    };
+    try {
+      const r = await api('/api/fix/apply', { method: 'POST', body: JSON.stringify(body) });
+      st.className = 'status ok';
+      const ok = r.commits.filter((c) => c.status === 'committed').length;
+      const fail = r.commits.filter((c) => c.status === 'failed').length;
+      st.textContent = `Applied ${ok} file(s) to the PR branch${fail ? `, ${fail} failed` : ''}.`;
+    } catch (e) {
+      st.className = 'status err'; st.textContent = e.message;
+    }
+  }
+
+  $('applySafeBtn').addEventListener('click', () => doApply(true));
+  $('centerApply').addEventListener('click', () => doApply(false));
+
+
   refreshAuth();
 })();

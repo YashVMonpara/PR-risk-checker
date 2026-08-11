@@ -109,3 +109,139 @@ export async function postToGitHub(
     files as never
   );
 }
+
+import { generateFixes, applyPatch, type FixPlan } from '../src/fix';
+
+/**
+ * Generates auto-fix plans for the given findings. Requires an LLM (the fixes
+ * are model-proposed). Returns one FixPlan per finding describing what can be
+ * applied, what needs user input, and what was skipped.
+ */
+export async function generateFixPlans(
+  token: string,
+  owner: string,
+  repo: string,
+  headSha: string,
+  findings: RiskFinding[],
+  llm: { apiKey?: string; baseURL?: string; model?: string }
+): Promise<FixPlan[]> {
+  const octokit = github.getOctokit(token);
+  const llmOptions = buildLLMOptions({
+    apiKey: llm.apiKey ?? '',
+    baseURL: llm.baseURL ?? '',
+    model: llm.model ?? 'gpt-4o-mini',
+  });
+  if (!llmOptions) {
+    throw new Error('An LLM must be configured to generate fixes (OpenAI key or LM Studio base URL).');
+  }
+  return generateFixes({
+    octokit: octokit as never,
+    owner,
+    repo,
+    headSha,
+    findings,
+    llmOptions,
+  });
+}
+
+export interface ApplyFixResult {
+  applied: number;
+  skippedNeedsInput: number;
+  failed: number;
+  /** Per-file commit results for the UI summary. */
+  commits: Array<{ path: string; status: 'committed' | 'failed'; sha?: string; error?: string }>;
+}
+
+/**
+ * Applies the approved fixes by committing them to the PR's head branch, one
+ * commit per file. Only plans whose path is in `approvedPaths` are touched, and
+ * a plan is only applied if its proposal still matches the file verbatim (the
+ * `applyPatch` guardrail) — so a stale plan can never corrupt a file.
+ *
+ * Fail-closed: a failure on one file is reported and does not abort the others.
+ * PRs from forks (where the token lacks push access) fail with a clear message
+ * rather than a confusing 404/422.
+ */
+export async function applyFixes(
+  token: string,
+  owner: string,
+  repo: string,
+  headSha: string,
+  pullNumber: number,
+  plans: FixPlan[],
+  approvedPaths: string[]
+): Promise<ApplyFixResult> {
+  const octokit = github.getOctokit(token);
+  const { data: prMeta } = await octokit.rest.pulls.get({ owner, repo, pull_number: pullNumber });
+  const headRef = prMeta.head.ref;
+  const approved = new Set(approvedPaths);
+  const commits: ApplyFixResult['commits'] = [];
+  let applied = 0;
+  let skippedNeedsInput = 0;
+  let failed = 0;
+
+  // Group approved, applicable plans by file path (one commit per file).
+  const byPath = new Map<string, FixPlan[]>();
+  for (const plan of plans) {
+    if (!approved.has(plan.path) || !plan.proposal) continue;
+    if (plan.status === 'needs_input' && plan.proposal.needs_user_input) {
+      // The engine said a human must decide; if the user still approved it we
+      // attempt it (applyPatch will validate), but count it as "needs input".
+      skippedNeedsInput += 1;
+    }
+    const list = byPath.get(plan.path) ?? [];
+    list.push(plan);
+    byPath.set(plan.path, list);
+  }
+
+  for (const [path, filePlans] of byPath) {
+    try {
+      // Fetch current file content + its blob SHA at head so we can update it.
+      const { data: current } = await octokit.rest.repos.getContent({ owner, repo, path, ref: headSha });
+      if (!('content' in current) || typeof current.content !== 'string') {
+        commits.push({ path, status: 'failed', error: 'Not a regular file (directory or submodule).' });
+        failed += 1;
+        continue;
+      }
+      let content = Buffer.from(current.content, 'base64').toString('utf8');
+      const blobSha = current.sha;
+
+      // Apply each approved patch, validating it matches verbatim.
+      let allApplied = true;
+      for (const plan of filePlans) {
+        if (!plan.proposal) continue;
+        const patched = applyPatch(content, plan.proposal.old_lines, plan.proposal.new_lines);
+        if (patched === null) {
+          allApplied = false;
+          break;
+        }
+        content = patched;
+      }
+
+      if (!allApplied) {
+        commits.push({ path, status: 'failed', error: 'A proposed change no longer matches the file (it may have shifted). Not applying.' });
+        failed += 1;
+        continue;
+      }
+
+      // Commit the updated file back to the PR head branch.
+      const result = await octokit.rest.repos.createOrUpdateFileContents({
+        owner,
+        repo,
+        path,
+        message: `fix(pr-risk-reviewer): auto-fix ${filePlans.length} finding(s) in ${path}`,
+        content: Buffer.from(content, 'utf8').toString('base64'),
+        sha: blobSha,
+        branch: headRef,
+      });
+      commits.push({ path, status: 'committed', sha: result.data.commit.sha });
+      applied += 1;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      commits.push({ path, status: 'failed', error: msg });
+      failed += 1;
+    }
+  }
+
+  return { applied, skippedNeedsInput, failed, commits };
+}

@@ -16,7 +16,7 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import session from 'express-session';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyze, postToGitHub } from './review';
+import { analyze, postToGitHub, generateFixPlans, applyFixes } from './review';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3180;
@@ -279,6 +279,54 @@ app.post('/api/post', requireToken, async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(502).json({ error: `Post failed: ${(err as Error).message}` });
+  }
+});
+
+
+// ---------------------------------------------------------------------------
+// Auto-fix (opt-in: requires an LLM configured in the review request)
+// ---------------------------------------------------------------------------
+
+/** Generates safe, minimal fix plans for the findings of a reviewed PR. */
+app.post('/api/fix', requireToken, async (req, res) => {
+  const token = tokenFor(req)!;
+  const { owner, repo, headSha, findings, llm } = req.body || {};
+
+  if (!owner || !repo || !headSha || !Array.isArray(findings)) {
+    res.status(400).json({ error: 'owner, repo, headSha and findings are required.' });
+    return;
+  }
+  if (!llm || (!llm.apiKey && !llm.baseURL)) {
+    res.status(400).json({ error: 'An LLM must be configured (apiKey or baseURL) to generate fixes.' });
+    return;
+  }
+
+  try {
+    const plans = await generateFixPlans(token, owner, repo, headSha, findings, llm);
+    res.json({ plans });
+  } catch (err) {
+    res.status(502).json({ error: `Fix generation failed: ${(err as Error).message}` });
+  }
+});
+
+/**
+ * Applies the approved fixes by committing them to the PR branch.
+ * Body: { owner, repo, headSha, pullNumber, plans, approvedPaths }.
+ */
+app.post('/api/fix/apply', requireToken, async (req, res) => {
+  const token = tokenFor(req)!;
+  const { owner, repo, headSha, pullNumber, plans, approvedPaths } = req.body || {};
+
+  if (!owner || !repo || !headSha || !pullNumber || !Array.isArray(plans) || !Array.isArray(approvedPaths)) {
+    res.status(400).json({ error: 'owner, repo, headSha, pullNumber, plans and approvedPaths are required.' });
+    return;
+  }
+
+  try {
+    const result = await applyFixes(token, owner, repo, headSha, pullNumber, plans, approvedPaths);
+    res.json(result);
+  } catch (err) {
+    res.status(502).json({ error: `Apply fixes failed: ${(err as Error).message}` });
   }
 });
 

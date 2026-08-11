@@ -84,7 +84,31 @@
       <div class="findings" id="findings"></div>
       <div class="actions">
         <button class="btn primary" id="postBtn">Post to GitHub</button>
+        <button class="btn accent" id="fixBtn">✨ Auto-fix…</button>
         <span class="status" id="postStatus"></span>
+      </div>
+    </section>
+
+    <!-- Screen: fixes -->
+    <section class="screen" id="screen-fixes" hidden>
+      <div class="results-head">
+        <div>
+          <h2>Proposed fixes</h2>
+          <div class="meta" id="fixesMeta"></div>
+        </div>
+        <button class="btn" id="fixBackBtn">← Back to findings</button>
+      </div>
+      <div class="fixes-note">
+        Each fix is a <strong>minimal, model-proposed</strong> change reviewed for safety.
+        <span class="ok">Ready</span> fixes pass all guardrails. <span class="warn">Needs input</span> means the
+        model flagged something only you can decide (e.g. a real secret, a breaking change with external consumers).
+        Nothing is committed until you approve.
+      </div>
+      <div class="fixes" id="fixesList"></div>
+      <div class="actions">
+        <button class="btn accent" id="applySafeBtn">Apply all safe</button>
+        <button class="btn primary" id="centerApply">Apply selected</button>
+        <span class="status" id="applyStatus"></span>
       </div>
     </section>
   </main>
