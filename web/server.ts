@@ -177,9 +177,13 @@ app.get('/api/repos', requireToken, async (req, res) => {
   const token = tokenFor(req)!;
   const q = String(req.query.q || '').trim();
   try {
-    let url = 'https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator';
+    // Own repos only — never surface other users' repositories.
+    const login = req.session.gh?.login;
+    let url = 'https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner';
     if (q) {
-      url = `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&per_page=30`;
+      // Scope the search to the authenticated user's own repos.
+      const qry = `${q} user:${login}`;
+      url = `https://api.github.com/search/repositories?q=${encodeURIComponent(qry)}&per_page=30`;
     }
     const r = await ghFetch(token, url);
     if (!r.ok) {

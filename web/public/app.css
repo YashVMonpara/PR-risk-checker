@@ -136,3 +136,12 @@ a { color: var(--blue); }
 .fix-card pre.diff .del { color: #ff7b72; display: block; }
 .fix-card pre.diff .add { color: #7ee787; display: block; }
 .fix-card .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); margin-top: 4px; cursor: pointer; }
+
+
+/* --- GitHub OAuth primary login --- */
+.btn.github { background: #24292f; border-color: #24292f; color: #fff; font-size: 15px; padding: 11px 16px; }
+.btn.github:hover { background: #32383f; }
+.alt-login { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+.alt-login summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+.alt-login[open] summary { margin-bottom: 10px; }
+.alt-login label { margin-top: 6px; }

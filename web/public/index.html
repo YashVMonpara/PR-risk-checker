@@ -19,11 +19,17 @@
       <p class="lede">Connect a GitHub account, pick a repo and a PR, and run the same risk analysis the Action uses — inline findings, security flags, breaking changes.</p>
 
       <div class="card" id="connectCard">
-        <label for="pat">GitHub personal access token</label>
-        <input type="password" id="pat" placeholder="ghp_… or github_pat_…" autocomplete="off" />
-        <p class="hint">Needs the <code>repo</code> scope. Stored only in your browser session — never written to disk or sent anywhere except GitHub. <a id="oauthLink" href="/api/auth/login" hidden>Or use OAuth →</a></p>
-        <button class="btn primary" id="connectBtn">Connect</button>
-        <div class="status" id="connectStatus"></div>
+        <button class="btn primary github" id="oauthBtn">🐙 Sign in with GitHub</button>
+        <p class="hint" id="oauthHint">Recommended. Opens GitHub in a popup to authorize this app — no token to copy or paste. Requires the server to be configured with a GitHub OAuth App (see <code>.env</code> / README).</p>
+
+        <details class="alt-login">
+          <summary>Or use a personal access token instead</summary>
+          <label for="pat">GitHub personal access token</label>
+          <input type="password" id="pat" placeholder="ghp_… or github_pat_…" autocomplete="off" />
+          <p class="hint">Needs the <code>repo</code> scope. Stored only in your browser session — never written to disk or sent anywhere except GitHub.</p>
+          <button class="btn" id="connectBtn">Connect with token</button>
+          <div class="status" id="connectStatus"></div>
+        </details>
       </div>
 
       <div class="card alt" id="connectedCard" hidden>

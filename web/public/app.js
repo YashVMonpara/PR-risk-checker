@@ -37,7 +37,13 @@
   // --- auth status ---
   async function refreshAuth() {
     const s = await api('/api/auth/status');
-    $('oauthLink').hidden = !s.oauthEnabled;
+    $('oauthBtn').hidden = !s.oauthEnabled;
+    // If OAuth isn't configured, no GitHub button — show the token form instead.
+    if (!s.oauthEnabled) {
+      document.querySelector('.alt-login').open = true;
+      document.querySelector('.alt-login summary').textContent = 'Sign in with a personal access token';
+      $('oauthHint').hidden = true;
+    }
     if (s.connected) {
       state.login = s.login;
       $('loginName').textContent = s.login;
@@ -74,6 +80,12 @@
     await api('/api/auth/logout', { method: 'POST' });
     state.login = null;
     await refreshAuth();
+  });
+
+  // --- sign in with GitHub (OAuth) ---
+  $('oauthBtn').addEventListener('click', () => {
+    // Full-page navigation so GitHub can redirect back to /api/auth/callback.
+    window.location.href = '/api/auth/login';
   });
 
   // --- repo search ---
