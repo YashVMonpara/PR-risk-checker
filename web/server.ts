@@ -16,6 +16,10 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import session from 'express-session';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
+import { fileURLToPath as __fileURLToPath } from 'node:url';
+dotenv.config({ path: path.resolve(__fileURLToPath(import.meta.url), '..', '.env') });
+
 import { analyze, postToGitHub, generateFixPlans, applyFixes } from './review';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

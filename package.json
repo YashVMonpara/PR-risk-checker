@@ -53,6 +53,7 @@
     "@typescript-eslint/parser": "^8.0.0",
     "@vercel/ncc": "^0.44.1",
     "@vscode/tree-sitter-wasm": "0.3.1",
+    "dotenv": "^16.6.1",
     "eslint": "^8.57.0",
     "jest": "^30.0.0",
     "nock": "^14.0.0",
