@@ -154,13 +154,17 @@ export interface ApplyFixResult {
 
 /**
  * Applies the approved fixes by committing them to the PR's head branch, one
- * commit per file. Only plans whose path is in `approvedPaths` AND is actually
- * part of the PR's changed files are touched, and a plan is only applied if its
- * proposal still matches the file verbatim (the `applyPatch` guardrail) — so a
- * stale or fabricated plan can never touch a file outside the PR or corrupt one
- * inside it. The client supplies `plans`/`approvedPaths` wholesale (they're not
- * cryptographically bound to a prior /api/fix response), so this endpoint is
- * the only place that re-checks a plan's path is real before writing anything.
+ * commit per file. Only plans whose index is in `approvedIndexes` AND whose path
+ * is actually part of the PR's changed files are touched, and a plan is only
+ * applied if its proposal still matches the file verbatim (the `applyPatch`
+ * guardrail) — so a stale or fabricated plan can never touch a file outside the
+ * PR or corrupt one inside it. Approval is keyed by index (not path) because a
+ * single file commonly has multiple findings/plans — keying by path would let
+ * approving one finding silently sweep in every other plan for that same file,
+ * including ones the user left unchecked. The client supplies
+ * `plans`/`approvedIndexes` wholesale (they're not cryptographically bound to a
+ * prior /api/fix response), so this endpoint is the only place that re-checks a
+ * plan's path is real before writing anything.
  *
  * Fail-closed: a failure on one file is reported and does not abort the others.
  * PRs from forks (where the token lacks push access) fail with a clear message
@@ -173,7 +177,7 @@ export async function applyFixes(
   headSha: string,
   pullNumber: number,
   plans: FixPlan[],
-  approvedPaths: string[]
+  approvedIndexes: number[]
 ): Promise<ApplyFixResult> {
   const octokit = github.getOctokit(token);
   const { data: prMeta } = await octokit.rest.pulls.get({ owner, repo, pull_number: pullNumber });
@@ -186,7 +190,7 @@ export async function applyFixes(
   });
   const prPaths = new Set(prFiles.map((f) => f.filename));
 
-  const approved = new Set(approvedPaths);
+  const approved = new Set(approvedIndexes);
   const commits: ApplyFixResult['commits'] = [];
   let applied = 0;
   let skippedNeedsInput = 0;
@@ -196,12 +200,12 @@ export async function applyFixes(
   // Only paths genuinely part of this PR are eligible — anything else is a
   // fabricated or stale request and is rejected rather than silently dropped.
   const byPath = new Map<string, FixPlan[]>();
-  for (const plan of plans) {
-    if (!approved.has(plan.path) || !plan.proposal) continue;
+  plans.forEach((plan, index) => {
+    if (!approved.has(index) || !plan.proposal) return;
     if (!prPaths.has(plan.path)) {
       commits.push({ path: plan.path, status: 'failed', error: 'This path is not part of the pull request — refusing to apply.' });
       failed += 1;
-      continue;
+      return;
     }
     if (plan.status === 'needs_input' && plan.proposal.needs_user_input) {
       // The engine said a human must decide; if the user still approved it we
@@ -211,7 +215,7 @@ export async function applyFixes(
     const list = byPath.get(plan.path) ?? [];
     list.push(plan);
     byPath.set(plan.path, list);
-  }
+  });
 
   for (const [path, filePlans] of byPath) {
     try {

@@ -418,19 +418,26 @@ app.post('/api/fix', requireToken, async (req, res) => {
 
 /**
  * Applies the approved fixes by committing them to the PR branch.
- * Body: { owner, repo, headSha, pullNumber, plans, approvedPaths }.
+ * Body: { owner, repo, headSha, pullNumber, plans, approvedIndexes }.
+ * approvedIndexes are indexes into `plans` — keyed by index (not path) since a
+ * single file can carry multiple findings/plans and approval must stay
+ * per-finding, not silently widen to every plan on that file.
  */
 app.post('/api/fix/apply', requireToken, async (req, res) => {
   const token = tokenFor(req)!;
-  const { owner, repo, headSha, pullNumber, plans, approvedPaths } = req.body || {};
+  const { owner, repo, headSha, pullNumber, plans, approvedIndexes } = req.body || {};
 
-  if (!owner || !repo || !headSha || !pullNumber || !Array.isArray(plans) || !Array.isArray(approvedPaths)) {
-    res.status(400).json({ error: 'owner, repo, headSha, pullNumber, plans and approvedPaths are required.' });
+  if (
+    !owner || !repo || !headSha || !pullNumber ||
+    !Array.isArray(plans) || !Array.isArray(approvedIndexes) ||
+    !approvedIndexes.every((n: unknown) => typeof n === 'number')
+  ) {
+    res.status(400).json({ error: 'owner, repo, headSha, pullNumber, plans and approvedIndexes (numbers) are required.' });
     return;
   }
 
   try {
-    const result = await applyFixes(token, owner, repo, headSha, pullNumber, plans, approvedPaths);
+    const result = await applyFixes(token, owner, repo, headSha, pullNumber, plans, approvedIndexes);
     res.json(result);
   } catch (err) {
     res.status(502).json({ error: `Apply fixes failed: ${(err as Error).message}` });

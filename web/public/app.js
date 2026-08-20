@@ -14,6 +14,7 @@
     connect: $('screen-connect'),
     pick: $('screen-pick'),
     results: $('screen-results'),
+    fixes: $('screen-fixes'),
   };
   function show(name) {
     for (const [k, el] of Object.entries(screens)) el.hidden = k !== name;
@@ -328,7 +329,7 @@
     const wrap = $('fixesList');
     wrap.innerHTML = '';
     if (!plans.length) { wrap.innerHTML = '<div class="card">No fixable findings.</div>'; return; }
-    for (const plan of plans) {
+    plans.forEach((plan, index) => {
       const el = document.createElement('div');
       el.className = `fix-card ${plan.status}`;
       const f = plan.finding;
@@ -347,23 +348,23 @@
       }
       const checkbox =
         plan.status === 'ready'
-          ? `<label class="chk"><input type="checkbox" data-path="${esc(plan.path)}" checked /> approve</label>`
+          ? `<label class="chk"><input type="checkbox" data-index="${index}" checked /> approve</label>`
           : plan.status === 'needs_input'
-          ? `<label class="chk"><input type="checkbox" data-path="${esc(plan.path)}" /> approve anyway</label>`
+          ? `<label class="chk"><input type="checkbox" data-index="${index}" /> approve anyway</label>`
           : '';
       el.innerHTML = head + why + diff + checkbox;
       wrap.appendChild(el);
-    }
+    });
   }
 
   $('fixBackBtn').addEventListener('click', () => show('results'));
 
   function collectApproved() {
-    const paths = new Set();
+    const indexes = new Set();
     document.querySelectorAll('#fixesList input[type=checkbox]:checked').forEach((c) => {
-      if (c.dataset.path) paths.add(c.dataset.path);
+      if (c.dataset.index !== undefined) indexes.add(Number(c.dataset.index));
     });
-    return [...paths];
+    return [...indexes];
   }
 
   async function doApply(allSafe) {
@@ -374,14 +375,17 @@
     let approved = collectApproved();
     if (allSafe) {
       // Apply only 'ready' plans regardless of checkbox selection.
-      approved = state.fixPlans.filter((p) => p.status === 'ready').map((p) => p.path);
+      approved = state.fixPlans
+        .map((p, index) => ({ p, index }))
+        .filter(({ p }) => p.status === 'ready')
+        .map(({ index }) => index);
     }
     const body = {
       owner, repo,
       headSha: state.lastResult.pr.headSha,
       pullNumber: state.pull,
       plans: state.fixPlans,
-      approvedPaths: approved,
+      approvedIndexes: approved,
     };
     try {
       const r = await api('/api/fix/apply', { method: 'POST', body: JSON.stringify(body) });
