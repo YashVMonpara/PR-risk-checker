@@ -154,9 +154,13 @@ export interface ApplyFixResult {
 
 /**
  * Applies the approved fixes by committing them to the PR's head branch, one
- * commit per file. Only plans whose path is in `approvedPaths` are touched, and
- * a plan is only applied if its proposal still matches the file verbatim (the
- * `applyPatch` guardrail) — so a stale plan can never corrupt a file.
+ * commit per file. Only plans whose path is in `approvedPaths` AND is actually
+ * part of the PR's changed files are touched, and a plan is only applied if its
+ * proposal still matches the file verbatim (the `applyPatch` guardrail) — so a
+ * stale or fabricated plan can never touch a file outside the PR or corrupt one
+ * inside it. The client supplies `plans`/`approvedPaths` wholesale (they're not
+ * cryptographically bound to a prior /api/fix response), so this endpoint is
+ * the only place that re-checks a plan's path is real before writing anything.
  *
  * Fail-closed: a failure on one file is reported and does not abort the others.
  * PRs from forks (where the token lacks push access) fail with a clear message
@@ -174,6 +178,14 @@ export async function applyFixes(
   const octokit = github.getOctokit(token);
   const { data: prMeta } = await octokit.rest.pulls.get({ owner, repo, pull_number: pullNumber });
   const headRef = prMeta.head.ref;
+  const prFiles = await octokit.paginate(octokit.rest.pulls.listFiles, {
+    owner,
+    repo,
+    pull_number: pullNumber,
+    per_page: 100,
+  });
+  const prPaths = new Set(prFiles.map((f) => f.filename));
+
   const approved = new Set(approvedPaths);
   const commits: ApplyFixResult['commits'] = [];
   let applied = 0;
@@ -181,9 +193,16 @@ export async function applyFixes(
   let failed = 0;
 
   // Group approved, applicable plans by file path (one commit per file).
+  // Only paths genuinely part of this PR are eligible — anything else is a
+  // fabricated or stale request and is rejected rather than silently dropped.
   const byPath = new Map<string, FixPlan[]>();
   for (const plan of plans) {
     if (!approved.has(plan.path) || !plan.proposal) continue;
+    if (!prPaths.has(plan.path)) {
+      commits.push({ path: plan.path, status: 'failed', error: 'This path is not part of the pull request — refusing to apply.' });
+      failed += 1;
+      continue;
+    }
     if (plan.status === 'needs_input' && plan.proposal.needs_user_input) {
       // The engine said a human must decide; if the user still approved it we
       // attempt it (applyPatch will validate), but count it as "needs input".

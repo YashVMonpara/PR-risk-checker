@@ -12,7 +12,7 @@
     "build": "ncc build src/index.ts -o dist --minify && node scripts/copy-wasm.js",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src __tests__ --ext .ts",
+    "lint": "eslint src __tests__ web --ext .ts",
     "format": "prettier --write \"{src,__tests__,scripts}/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "local-run": "node scripts/local-run.js",

@@ -21,6 +21,6 @@
     "sourceMap": false,
     "types": ["node", "jest"]
   },
-  "include": ["src/**/*.ts", "__tests__/**/*.ts"],
+  "include": ["src/**/*.ts", "__tests__/**/*.ts", "web/oauthState.ts", "web/repoFilter.ts"],
   "exclude": ["node_modules", "dist", "lib"]
 }
