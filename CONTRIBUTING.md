@@ -11,7 +11,7 @@ toolchain, and no database.
 
 ```bash
 git clone https://github.com/YashVMonpara/PR-risk-checker.git
-cd pr-risk-checker
+cd PR-risk-checker
 npm ci
 ```
 
