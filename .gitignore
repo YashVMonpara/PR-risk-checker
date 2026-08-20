@@ -10,3 +10,4 @@ tmp/
 .local-run/
 
 # dist/ is intentionally COMMITTED — GitHub Actions runs the pre-built bundle.
+.claude/

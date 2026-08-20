@@ -314,6 +314,10 @@ What the app does:
 
 > The app never stores data. The token lives in the session cookie; nothing is written to disk or sent anywhere except GitHub. For OAuth, register the app under your own account.
 
+By default the server binds to `127.0.0.1` only — it holds a live GitHub token and any LLM API
+key you type in, so it isn't reachable from other devices on your network. Set `HOST=0.0.0.0`
+in `web/.env` if you deliberately want LAN access (and set a real `SESSION_SECRET` first).
+
 The server (`web/server.ts`) and SPA (`web/public/`) are intentionally separate from the Action so the bundle stays self-contained for GitHub's runner.
 
 ---
