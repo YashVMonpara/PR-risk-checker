@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run PR Risk Reviewer
+      - name: Run PR Risk Checker
         uses: ./
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

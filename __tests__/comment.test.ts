@@ -177,7 +177,7 @@ describe('buildFooter', () => {
   it('emits no link at all outside a workflow', () => {
     const footer = buildFooter({} as NodeJS.ProcessEnv);
 
-    expect(footer).toBe('<sub>🤖 Posted by PR Risk Reviewer</sub>');
+    expect(footer).toBe('<sub>🤖 Posted by PR Risk Checker</sub>');
     expect(footer).not.toContain('](');
   });
 

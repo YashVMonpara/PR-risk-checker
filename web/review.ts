@@ -1,5 +1,5 @@
 /**
- * Server-side entry point into the PR Risk Reviewer engine.
+ * Server-side entry point into the PR Risk Checker engine.
  *
  * Reuses the action's analysis pipeline (analyzePullRequest) and the real GitHub
  * posting path (postReview) so the web app and the Action never drift. The only
@@ -252,7 +252,7 @@ export async function applyFixes(
         owner,
         repo,
         path,
-        message: `fix(pr-risk-reviewer): auto-fix ${filePlans.length} finding(s) in ${path}`,
+        message: `fix(pr-risk-checker): auto-fix ${filePlans.length} finding(s) in ${path}`,
         content: Buffer.from(content, 'utf8').toString('base64'),
         sha: blobSha,
         branch: headRef,

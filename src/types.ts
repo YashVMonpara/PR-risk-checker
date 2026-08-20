@@ -1,5 +1,5 @@
 /**
- * Shared type definitions for PR Risk Reviewer.
+ * Shared type definitions for PR Risk Checker.
  */
 
 /** Severity levels, ordered from least to most severe. */

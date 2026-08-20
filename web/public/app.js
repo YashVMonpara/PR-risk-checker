@@ -1,4 +1,4 @@
-/* PR Risk Reviewer web UI — vanilla JS, talks to /api/* on the same origin. */
+/* PR Risk Checker web UI — vanilla JS, talks to /api/* on the same origin. */
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);

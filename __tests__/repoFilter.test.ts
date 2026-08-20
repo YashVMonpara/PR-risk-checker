@@ -1,7 +1,7 @@
 import { filterRepos, parseNextPageLink } from '../web/repoFilter';
 
 const repos = [
-  { fullName: 'yash/pr-risk-reviewer', description: 'Reviews pull requests for risk' },
+  { fullName: 'yash/pr-risk-checker', description: 'Reviews pull requests for risk' },
   { fullName: 'yash/left-pad-clone', description: null },
   { fullName: 'yash/notes', description: 'Personal notes and TODOs' },
 ];

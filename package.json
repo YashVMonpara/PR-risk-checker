@@ -1,5 +1,5 @@
 {
-  "name": "pr-risk-reviewer",
+  "name": "pr-risk-checker",
   "version": "1.0.0",
   "description": "GitHub Action that analyzes PR diffs for risky changes using tree-sitter AST analysis, deterministic rules, and an LLM (OpenAI or LM Studio).",
   "main": "dist/index.js",
@@ -19,7 +19,6 @@
     "e2e": "node scripts/local-run.js",
     "e2e:mock-llm": "node scripts/e2e-mock-llm.js",
     "e2e:lmstudio": "node scripts/local-run.js --llm lmstudio",
-    "panel": "node scripts/serve-panel.js 8877",
     "web": "tsx watch web/server.ts"
   },
   "keywords": [

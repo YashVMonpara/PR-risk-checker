@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Opens a demo pull request containing deliberately risky changes, so you can
-# watch PR Risk Reviewer comment on it.
+# watch PR Risk Checker comment on it.
 #
 # Usage:  ./scripts/demo-pr.sh [branch-name]
 #
@@ -54,11 +54,11 @@ if [[ -f package.json ]]; then
 fi
 
 git add examples/demo-service.js package.json
-git commit -m "demo: add risky changes for PR Risk Reviewer"
+git commit -m "demo: add risky changes for PR Risk Checker"
 git push -u origin "$BRANCH"
 
 PR_URL="$(gh pr create \
-  --title "Demo: risky changes for PR Risk Reviewer" \
+  --title "Demo: risky changes for PR Risk Checker" \
   --body "short" \
   --base "$DEFAULT_BRANCH" \
   --head "$BRANCH")"

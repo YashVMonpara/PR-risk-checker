@@ -1,8 +1,8 @@
-# PR Risk Reviewer
+# PR Risk Checker
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
-[![CI](https://github.com/YashVMonpara/pr-risk-reviewer/actions/workflows/ci.yml/badge.svg)](https://github.com/YashVMonpara/pr-risk-reviewer/actions/workflows/ci.yml)
+[![CI](https://github.com/YashVMonpara/PR-risk-checker/actions/workflows/ci.yml/badge.svg)](https://github.com/YashVMonpara/PR-risk-checker/actions/workflows/ci.yml)
 
 **Free, open-source PR review that combines AST analysis, deterministic rules, and an optional
 LLM — yours to run as a GitHub Action, a local web app, or both.** No account, no server, no
@@ -13,7 +13,7 @@ It posts inline review comments on the exact lines it's worried about, and falls
 summary table when a line can't be positioned in the diff.
 
 ```yaml
-- uses: YashVMonpara/pr-risk-reviewer@main
+- uses: YashVMonpara/PR-risk-checker@main
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -33,7 +33,6 @@ only — no API key, no cost, no network calls beyond GitHub.
 - [LM Studio / local models](#lm-studio--local-models)
 - [Configuration reference](#configuration-reference)
 - [Testing it locally](#testing-it-locally)
-- [Setup wizard](#setup-wizard-no-github-required)
 - [Repository layout](#repository-layout)
 - [Contributing](#contributing)
 - [Known limitations](#known-limitations)
@@ -72,10 +71,9 @@ TSX are supported; grammars ship as WASM, so no compiler toolchain is needed on 
 - **LM Studio is optional.** Only needed if you want LLM triage to run on your own hardware
   instead of OpenAI. Skip it entirely and the tool still works — deterministic rules only.
 
-> **No Python required, anywhere.** This is a pure Node.js/TypeScript project — the Action, the
-> web app, and the setup wizard are all plain JS/TS with no Python scripts, no `pip install`, no
-> virtualenv. If you've seen a reference to Python for this project, it's out of date or
-> mistaken.
+> **No Python required, anywhere.** This is a pure Node.js/TypeScript project — the Action and the
+> web app are both plain JS/TS, no Python scripts, no `pip install`, no virtualenv. If you've seen
+> a reference to Python for this project, it's out of date or mistaken.
 
 ---
 
@@ -84,8 +82,8 @@ TSX are supported; grammars ship as WASM, so no compiler toolchain is needed on 
 ### Option A — GitHub Action (reviews PRs automatically)
 
 ```yaml
-# .github/workflows/pr-risk-review.yml
-name: PR Risk Review
+# .github/workflows/pr-risk-check.yml
+name: PR Risk Check
 on: pull_request
 permissions:
   contents: read
@@ -95,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: YashVMonpara/pr-risk-reviewer@main
+      - uses: YashVMonpara/PR-risk-checker@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -106,8 +104,8 @@ Commit that file, open a PR, done. No secrets to add for the deterministic-rules
 ### Option B — Web app (point-and-click, runs on your machine)
 
 ```bash
-git clone https://github.com/YashVMonpara/pr-risk-reviewer.git
-cd pr-risk-reviewer
+git clone https://github.com/YashVMonpara/PR-risk-checker.git
+cd PR-risk-checker
 npm ci
 npm run web          # serves the app at http://localhost:3180 (127.0.0.1 only, by default)
 ```
@@ -196,7 +194,7 @@ is not an afterthought.
   `error`-severity security finding is fail-closed: the model can reword it, but never suppress
   or downgrade it. See `applySafetyFloor` in `src/llm.ts`.
 - **No account creation, ever.** Both the Action and the web app work entirely against your own
-  GitHub token/session — there is no PR-Risk-Reviewer account, no sign-up, no hosted backend to
+  GitHub token/session — there is no PR Risk Checker account, no sign-up, no hosted backend to
   trust.
 
 If you find a way around any of the above, please report it privately — see
@@ -225,7 +223,7 @@ curl http://localhost:1234/v1/models   # confirm it's up
 For the **Action**:
 
 ```yaml
-- uses: YashVMonpara/pr-risk-reviewer@main
+- uses: YashVMonpara/PR-risk-checker@main
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     llm_api_base_url: http://localhost:1234/v1
@@ -333,29 +331,6 @@ npm run typecheck
 
 ---
 
-## Setup wizard (no GitHub required)
-
-Hand-writing workflows is where most people get this wrong — usually the `localhost` trap (a
-hosted runner can't reach your laptop's LM Studio) or inlining a secret. `panel/` is a single
-static page that guides you through the choices with inline hints and emits a correct
-`pr-risk-review.yml`. It also **probes your LM Studio instance and auto-fills the loaded model
-list** — so you never type a model ID from memory.
-
-```bash
-npm run panel          # serves panel/ at http://localhost:8877
-```
-
-Nothing is uploaded: the only network call is the LM Studio probe you trigger yourself, and
-secrets are emitted as `${{ secrets.* }}` references, never inlined.
-
-```bash
-lms server start --cors   # needed for the wizard to probe from the browser
-```
-
-(The `--cors` flag affects only the in-browser wizard, not the Action or the web app.)
-
----
-
 ## Repository layout
 
 ```
@@ -377,7 +352,6 @@ scripts/
   demo-pr.sh       opens a real demo PR
 fixtures/demo-pr/  base/head files and git-generated patches
 web/                companion web app (server.ts, review.ts, public/)
-panel/              static setup wizard (index.html, panel.css, panel.js)
 dist/              committed build (index.js + 4 WASM files)
 ```
 

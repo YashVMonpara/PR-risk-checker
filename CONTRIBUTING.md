@@ -1,4 +1,4 @@
-# Contributing to PR Risk Reviewer
+# Contributing to PR Risk Checker
 
 Thanks for considering a contribution. This project is a GitHub Action plus a small companion
 web app — both live in this one repository and share the same analysis engine (`src/`), so a fix
@@ -10,8 +10,8 @@ You need **Node.js 20+** and **npm** — nothing else. There's no Python, no nat
 toolchain, and no database.
 
 ```bash
-git clone https://github.com/YashVMonpara/pr-risk-reviewer.git
-cd pr-risk-reviewer
+git clone https://github.com/YashVMonpara/PR-risk-checker.git
+cd pr-risk-checker
 npm ci
 ```
 
@@ -78,5 +78,5 @@ Please **do not** open a public issue for a security vulnerability — see
 
 ## Questions
 
-Open a [discussion or issue](https://github.com/YashVMonpara/pr-risk-reviewer/issues) — there's
+Open a [discussion or issue](https://github.com/YashVMonpara/PR-risk-checker/issues) — there's
 no separate chat/forum for this project.

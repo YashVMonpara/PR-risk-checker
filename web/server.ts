@@ -1,5 +1,5 @@
 /**
- * PR Risk Reviewer — companion web app.
+ * PR Risk Checker — companion web app.
  *
  * A local web app that lets a user connect a GitHub account, pick a repository,
  * pick a pull request, run the review engine, read the findings in a clean UI,
@@ -459,7 +459,7 @@ if (SESSION_SECRET === DEFAULT_SESSION_SECRET) {
 }
 
 app.listen(PORT, HOST, () => {
-  console.log(`PR Risk Reviewer web app: http://${HOST}:${PORT}`);
+  console.log(`PR Risk Checker web app: http://${HOST}:${PORT}`);
   if (HOST !== '127.0.0.1' && HOST !== 'localhost') {
     console.warn(`WARNING: listening on ${HOST}, not just localhost — this server is reachable from other devices on your network.`);
   }

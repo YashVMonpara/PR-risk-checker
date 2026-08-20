@@ -240,7 +240,7 @@ export async function run(): Promise<void> {
       core.setFailed(`${errors.length} error-severity finding(s) detected.`);
     }
   } catch (error) {
-    core.setFailed(`PR Risk Reviewer failed: ${(error as Error).message ?? error}`);
+    core.setFailed(`PR Risk Checker failed: ${(error as Error).message ?? error}`);
   }
 }
 

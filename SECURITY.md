@@ -1,6 +1,6 @@
 # Security Policy
 
-PR Risk Reviewer handles GitHub tokens and, optionally, LLM API keys — both as a GitHub Action
+PR Risk Checker handles GitHub tokens and, optionally, LLM API keys — both as a GitHub Action
 and as a local web app. We take reports about either seriously.
 
 ## Reporting a vulnerability
@@ -9,19 +9,18 @@ and as a local web app. We take reports about either seriously.
 
 Instead, use one of these private channels:
 
-1. **[GitHub Security Advisories](https://github.com/YashVMonpara/pr-risk-reviewer/security/advisories/new)**
+1. **[GitHub Security Advisories](https://github.com/YashVMonpara/PR-risk-checker/security/advisories/new)**
    (preferred) — lets you report privately and, if you want, collaborate on a fix before it's
    disclosed.
 2. Email the maintainer directly (see the profile on the
-   [repository's GitHub page](https://github.com/YashVMonpara/pr-risk-reviewer)) with a subject
+   [repository's GitHub page](https://github.com/YashVMonpara/PR-risk-checker)) with a subject
    line starting `SECURITY:`.
 
 Please include:
 
 - What you found and why it matters (impact).
 - Steps to reproduce, or a minimal proof of concept.
-- Which component is affected: the GitHub Action (`src/`), the web app (`web/`), or the setup
-  wizard (`panel/`).
+- Which component is affected: the GitHub Action (`src/`) or the web app (`web/`).
 
 We'll acknowledge reports within a few days and aim to have a fix or mitigation out within two
 weeks for anything credible, faster for anything actively exploitable.

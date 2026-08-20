@@ -22,14 +22,14 @@ export function buildFooter(env: NodeJS.ProcessEnv = process.env): string {
   const runId = env.GITHUB_RUN_ID;
 
   if (repo && runId) {
-    return `<sub>🤖 Posted by PR Risk Reviewer · [view run](${server}/${repo}/actions/runs/${runId})</sub>`;
+    return `<sub>🤖 Posted by PR Risk Checker · [view run](${server}/${repo}/actions/runs/${runId})</sub>`;
   }
 
   if (repo) {
-    return `<sub>🤖 Posted by PR Risk Reviewer · [${repo}](${server}/${repo})</sub>`;
+    return `<sub>🤖 Posted by PR Risk Checker · [${repo}](${server}/${repo})</sub>`;
   }
 
-  return '<sub>🤖 Posted by PR Risk Reviewer</sub>';
+  return '<sub>🤖 Posted by PR Risk Checker</sub>';
 }
 
 export interface PostResult {
@@ -58,7 +58,7 @@ export function buildSummary(findings: RiskFinding[], unmapped: RiskFinding[] = 
   const footer = buildFooter();
 
   if (findings.length === 0) {
-    return `## PR Risk Reviewer\n\n✅ No risks detected in this pull request.\n\n${footer}`;
+    return `## PR Risk Checker\n\n✅ No risks detected in this pull request.\n\n${footer}`;
   }
 
   const counts: Record<Severity, number> = { error: 0, warning: 0, info: 0 };
@@ -70,7 +70,7 @@ export function buildSummary(findings: RiskFinding[], unmapped: RiskFinding[] = 
   if (counts.info) parts.push(`${counts.info} info`);
 
   const lines = [
-    '## PR Risk Reviewer',
+    '## PR Risk Checker',
     '',
     `Found **${findings.length}** item${findings.length === 1 ? '' : 's'} — ${parts.join(', ')}.`,
     '',

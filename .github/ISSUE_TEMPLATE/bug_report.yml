@@ -9,7 +9,6 @@ body:
       options:
         - GitHub Action (src/)
         - Web app (web/)
-        - Setup wizard (panel/)
         - Not sure
     validations:
       required: true

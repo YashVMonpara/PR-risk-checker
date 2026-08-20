@@ -1,4 +1,4 @@
-# PR Risk Reviewer — Architecture & Design
+# PR Risk Checker — Architecture & Design
 
 This is the design document for the action. It records what was built, why, and
 which decisions were forced by evidence gathered while building it.

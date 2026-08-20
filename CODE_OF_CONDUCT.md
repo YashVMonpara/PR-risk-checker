@@ -46,7 +46,7 @@ and also applies when an individual is officially representing the community in 
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the
 maintainer via the contact listed on the
-[repository's GitHub page](https://github.com/YashVMonpara/pr-risk-reviewer). All complaints will
+[repository's GitHub page](https://github.com/YashVMonpara/PR-risk-checker). All complaints will
 be reviewed and investigated promptly and fairly.
 
 ## Attribution

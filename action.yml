@@ -1,6 +1,6 @@
-name: 'PR Risk Reviewer'
+name: 'PR Risk Checker'
 description: 'Analyzes PR diffs for risky changes using AST and LLM (supports OpenAI & LM Studio).'
-author: 'pr-risk-reviewer'
+author: 'YashVMonpara'
 
 branding:
   icon: 'shield'
