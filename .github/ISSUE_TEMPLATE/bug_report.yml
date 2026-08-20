@@ -1,0 +1,54 @@
+name: Bug report
+description: Something isn't working as expected in the Action or the web app.
+labels: [bug]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - GitHub Action (src/)
+        - Web app (web/)
+        - Setup wizard (panel/)
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: |
+        For the Action: your workflow YAML (redact secrets) and, if possible, a link to the
+        run. For the web app: what you clicked, what backend (rules-only / OpenAI / LM Studio)
+        you had configured.
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: The Action ref you used (e.g. @main, a tag, a commit SHA), or `git rev-parse HEAD` if running locally.
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Action run logs or web app console/server output. Please redact any tokens or API keys before pasting.
+      render: shell
+    validations:
+      required: false
