@@ -179,4 +179,77 @@ describe('generateFixes guardrails', () => {
     expect(plans[0].status).toBe('error');
     expect(plans[0].reason).toMatch(/not found verbatim/i);
   });
+
+  it('rejects an empty new_lines (would delete code without replacement)', async () => {
+    (llm.generateFixWithLLM as jest.Mock).mockResolvedValue({
+      old_lines: 'const x = eval("1+1");',
+      new_lines: '   ',
+      confidence: 0.95,
+      needs_user_input: false,
+    });
+    const plans = await generateFixes({
+      octokit: {}, owner: 'o', repo: 'r', headSha: 'sha', findings: [finding()], llmOptions,
+    });
+    expect(plans[0].status).toBe('error');
+    expect(plans[0].reason).toMatch(/empty new_lines/i);
+  });
+
+  it('rejects a no-op fix (old_lines identical to new_lines)', async () => {
+    (llm.generateFixWithLLM as jest.Mock).mockResolvedValue({
+      old_lines: 'const x = eval("1+1");',
+      new_lines: 'const x = eval("1+1");',
+      confidence: 0.95,
+      needs_user_input: false,
+    });
+    const plans = await generateFixes({
+      octokit: {}, owner: 'o', repo: 'r', headSha: 'sha', findings: [finding()], llmOptions,
+    });
+    expect(plans[0].status).toBe('error');
+    expect(plans[0].reason).toMatch(/identical/i);
+  });
+
+  it('rejects an ambiguous patch whose old_lines appears more than once', async () => {
+    (github.getFileContent as jest.Mock).mockResolvedValue('dup\ndup\n');
+    (llm.generateFixWithLLM as jest.Mock).mockResolvedValue({
+      old_lines: 'dup',
+      new_lines: 'fixed',
+      confidence: 0.95,
+      needs_user_input: false,
+    });
+    const plans = await generateFixes({
+      octokit: {}, owner: 'o', repo: 'r', headSha: 'sha', findings: [finding()], llmOptions,
+    });
+    expect(plans[0].status).toBe('error');
+    expect(plans[0].reason).toMatch(/more than once/i);
+  });
+
+  it('rejects a patch with an unmatched closing bracket', async () => {
+    (github.getFileContent as jest.Mock).mockResolvedValue('const a = 1;\n');
+    (llm.generateFixWithLLM as jest.Mock).mockResolvedValue({
+      old_lines: 'const a = 1;',
+      new_lines: 'const a = 1; }',
+      confidence: 0.95,
+      needs_user_input: false,
+    });
+    const plans = await generateFixes({
+      octokit: {}, owner: 'o', repo: 'r', headSha: 'sha', findings: [finding()], llmOptions,
+    });
+    expect(plans[0].status).toBe('error');
+    expect(plans[0].reason).toMatch(/unmatched closing bracket/i);
+  });
+
+  it('rejects a patch that leaves a dangling unclosed bracket', async () => {
+    (github.getFileContent as jest.Mock).mockResolvedValue('const a = 1;\n');
+    (llm.generateFixWithLLM as jest.Mock).mockResolvedValue({
+      old_lines: 'const a = 1;',
+      new_lines: 'if (true) { const a = 1;',
+      confidence: 0.95,
+      needs_user_input: false,
+    });
+    const plans = await generateFixes({
+      octokit: {}, owner: 'o', repo: 'r', headSha: 'sha', findings: [finding()], llmOptions,
+    });
+    expect(plans[0].status).toBe('error');
+    expect(plans[0].reason).toMatch(/missing closing brackets/i);
+  });
 });

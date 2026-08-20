@@ -140,8 +140,11 @@ function validateProposal(
   if (Number.isNaN(delta)) {
     return { ok: false, reason: 'Resulting file has an unmatched closing bracket — fix looks incomplete.' };
   }
-  if (delta < 0) {
-    return { ok: false, reason: 'Resulting file is missing opening brackets — fix looks incomplete.' };
+  // balanceDelta never goes negative (an unmatched closer is caught above as NaN), so the only
+  // remaining imbalance is a net positive depth: more opens than closes, i.e. a dangling
+  // unclosed bracket left by the patch.
+  if (delta > 0) {
+    return { ok: false, reason: 'Resulting file is missing closing brackets — fix looks incomplete.' };
   }
 
   return { ok: true };

@@ -12,12 +12,22 @@ jest.mock('openai', () => ({
   },
 }));
 
-import { assessRiskWithLLM, buildLLMOptions, truncateForPrompt } from '../src/llm';
+import { assessRiskWithLLM, buildLLMOptions, generateFixWithLLM, truncateForPrompt } from '../src/llm';
 import { RiskFinding } from '../src/types';
 
 function reply(content: string) {
   return { choices: [{ message: { content } }] };
 }
+
+const fixFinding: RiskFinding = {
+  rule: 'security-anti-patterns/eval',
+  category: 'security',
+  level: 'error',
+  message: 'Use of eval() is dangerous.',
+  path: 'src/a.ts',
+  line: 3,
+  snippet: 'eval(x)',
+};
 
 const securityFinding: RiskFinding = {
   rule: 'security-anti-patterns/eval',
@@ -277,6 +287,129 @@ describe('assessRiskWithLLM — resilience', () => {
     });
 
     expect(verdict).toBeNull();
+  });
+});
+
+describe('generateFixWithLLM', () => {
+  it('parses a valid fix proposal', async () => {
+    mockCreate.mockResolvedValue(
+      reply(
+        '{"old_lines":"eval(x)","new_lines":"JSON.parse(x)","confidence":0.9,"needs_user_input":false,"rationale":"safer"}'
+      )
+    );
+
+    const fix = await generateFixWithLLM(fixFinding, 'file content', 'src/a.ts', {
+      apiKey: 'k',
+      model: 'm',
+    });
+
+    expect(fix).toEqual({
+      old_lines: 'eval(x)',
+      new_lines: 'JSON.parse(x)',
+      confidence: 0.9,
+      needs_user_input: false,
+      user_input_reason: undefined,
+      rationale: 'safer',
+    });
+  });
+
+  it('parses a fenced ```json fix proposal', async () => {
+    mockCreate.mockResolvedValue(
+      reply(
+        '```json\n{"old_lines":"a","new_lines":"b","confidence":0.7,"needs_user_input":false}\n```'
+      )
+    );
+
+    const fix = await generateFixWithLLM(fixFinding, 'file content', 'src/a.ts', {
+      apiKey: 'k',
+      model: 'm',
+    });
+
+    expect(fix!.old_lines).toBe('a');
+    expect(fix!.new_lines).toBe('b');
+  });
+
+  it('defaults confidence to 0.5 when the model omits it', async () => {
+    mockCreate.mockResolvedValue(
+      reply('{"old_lines":"a","new_lines":"b","needs_user_input":false}')
+    );
+
+    const fix = await generateFixWithLLM(fixFinding, 'file content', 'src/a.ts', {
+      apiKey: 'k',
+      model: 'm',
+    });
+
+    expect(fix!.confidence).toBe(0.5);
+  });
+
+  it('returns null when needs_user_input is set, carrying the reason', async () => {
+    mockCreate.mockResolvedValue(
+      reply(
+        '{"old_lines":"a","new_lines":"b","confidence":0.9,"needs_user_input":true,"user_input_reason":"real secret"}'
+      )
+    );
+
+    const fix = await generateFixWithLLM(fixFinding, 'file content', 'src/a.ts', {
+      apiKey: 'k',
+      model: 'm',
+    });
+
+    expect(fix!.needs_user_input).toBe(true);
+    expect(fix!.user_input_reason).toBe('real secret');
+  });
+
+  it('returns null when old_lines/new_lines are missing or not strings', async () => {
+    mockCreate.mockResolvedValue(reply('{"confidence":0.9,"needs_user_input":false}'));
+
+    const fix = await generateFixWithLLM(fixFinding, 'file content', 'src/a.ts', {
+      apiKey: 'k',
+      model: 'm',
+      maxRetries: 1,
+    });
+
+    expect(fix).toBeNull();
+  });
+
+  it('returns null on unparseable output', async () => {
+    mockCreate.mockResolvedValue(reply('not json at all'));
+
+    const fix = await generateFixWithLLM(fixFinding, 'file content', 'src/a.ts', {
+      apiKey: 'k',
+      model: 'm',
+      maxRetries: 1,
+    });
+
+    expect(fix).toBeNull();
+  });
+
+  it('retries a transient failure and succeeds', async () => {
+    mockCreate
+      .mockRejectedValueOnce(new Error('ECONNRESET'))
+      .mockResolvedValueOnce(
+        reply('{"old_lines":"a","new_lines":"b","confidence":0.8,"needs_user_input":false}')
+      );
+
+    const fix = await generateFixWithLLM(fixFinding, 'file content', 'src/a.ts', {
+      apiKey: 'k',
+      model: 'm',
+      maxRetries: 3,
+    });
+
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect(fix!.new_lines).toBe('b');
+  });
+
+  it('gives up after maxRetries and returns null', async () => {
+    mockCreate.mockRejectedValue(new Error('connection refused'));
+
+    const fix = await generateFixWithLLM(fixFinding, 'file content', 'src/a.ts', {
+      apiKey: 'k',
+      model: 'm',
+      maxRetries: 3,
+    });
+
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+    expect(fix).toBeNull();
   });
 });
 
