@@ -59,9 +59,23 @@
     }
   }
 
+  // --- sign in with GitHub (OAuth) ---
+  $('oauthBtn').addEventListener('click', () => {
+    const st = $('connectStatus');
+    st.className = 'status'; st.textContent = 'Redirecting to GitHub…';
+    // Full-page navigation so GitHub can redirect back to /api/auth/callback.
+    window.location.href = '/api/auth/login';
+  });
+
+  $('logoutBtn').addEventListener('click', async () => {
+    await api('/api/auth/logout', { method: 'POST' });
+    state.login = null;
+    await refreshAuth();
+  });
+
   // --- connect with token ---
   $('connectBtn').addEventListener('click', async () => {
-    const st = $('connectStatus');
+    const st = $('patStatus');
     st.className = 'status'; st.textContent = 'Connecting…';
     try {
       const r = await api('/api/auth/token', {
@@ -74,18 +88,6 @@
     } catch (e) {
       st.className = 'status err'; st.textContent = e.message;
     }
-  });
-
-  $('logoutBtn').addEventListener('click', async () => {
-    await api('/api/auth/logout', { method: 'POST' });
-    state.login = null;
-    await refreshAuth();
-  });
-
-  // --- sign in with GitHub (OAuth) ---
-  $('oauthBtn').addEventListener('click', () => {
-    // Full-page navigation so GitHub can redirect back to /api/auth/callback.
-    window.location.href = '/api/auth/login';
   });
 
   // --- repo search ---
@@ -145,17 +147,77 @@
     }
   }
 
+  // --- detect locally-installed models (LM Studio / any OpenAI-compatible endpoint) ---
+  // Same idea as panel/panel.js's probe(): the browser calls the LLM endpoint's own
+  // /v1/models directly (never through our server), so the base URL only ever needs to be
+  // reachable from this machine, exactly like the review call it configures.
+  $('detectModelsBtn').addEventListener('click', async () => {
+    const st = $('detectModelsStatus');
+    const raw = $('llmUrl').value.trim().replace(/\/+$/, '');
+    if (!raw) {
+      st.className = 'status err'; st.textContent = 'Enter a base URL first (e.g. http://localhost:1234/v1).';
+      return;
+    }
+    st.className = 'status'; st.innerHTML = '<span class="spinner"></span> Contacting endpoint…';
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    try {
+      const res = await fetch(`${raw}/models`, { signal: controller.signal });
+      clearTimeout(timer);
+      if (!res.ok) {
+        st.className = 'status err';
+        st.textContent = res.status === 401
+          ? `HTTP ${res.status} — this endpoint needs an API key. Fill in the API key field above.`
+          : `HTTP ${res.status} — check the URL includes /v1.`;
+        return;
+      }
+      const data = await res.json();
+      const ids = (data.data || []).map((m) => m.id).filter(Boolean);
+
+      const list = $('modelOptions');
+      list.innerHTML = '';
+      for (const id of ids) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        list.appendChild(opt);
+      }
+
+      // Chat models only — embedding models can't do triage.
+      const chat = ids.filter((id) => !/embed/i.test(id));
+      if (chat.length && !$('llmModel').value.trim()) {
+        $('llmModel').value = chat[0];
+      }
+
+      st.className = 'status ok';
+      st.textContent = ids.length
+        ? `Found ${ids.length} model(s) — picked "${$('llmModel').value}". Change it below if you prefer another.`
+        : 'Connected, but the endpoint reported no models loaded.';
+    } catch (e) {
+      clearTimeout(timer);
+      st.className = 'status err';
+      st.textContent = e.name === 'AbortError'
+        ? 'Timed out after 6s — is the server running?'
+        : 'Could not reach the endpoint. Check it\'s running and reachable at that URL.';
+    }
+  });
+
   // --- run review ---
   $('runBtn').addEventListener('click', async () => {
     if (!state.repo || !state.pull) return;
     const st = $('runStatus');
     st.className = 'status'; st.innerHTML = '<span class="spinner"></span> Analyzing…';
+    // Clear any outcome left over from a previously reviewed PR, so it can't be
+    // mistaken for this PR's status before the user has actually acted on it.
+    $('postStatus').className = 'status'; $('postStatus').textContent = '';
+    $('applyStatus').className = 'status'; $('applyStatus').textContent = '';
     const [owner, repo] = state.repo.split('/');
     const llmKey = $('llmKey').value.trim();
     const llmUrl = $('llmUrl').value.trim();
     const llmModel = $('llmModel').value.trim();
     const body = {
       owner, repo, pullNumber: state.pull,
+      threshold: $('threshold').value,
       ...(llmKey || llmUrl ? { llm: { apiKey: llmKey, baseURL: llmUrl, model: llmModel || 'gpt-4o-mini' } } : {}),
     };
     try {

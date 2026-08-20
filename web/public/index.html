@@ -20,7 +20,8 @@
 
       <div class="card" id="connectCard">
         <button class="btn primary github" id="oauthBtn">🐙 Sign in with GitHub</button>
-        <p class="hint" id="oauthHint">Recommended. Opens GitHub in a popup to authorize this app — no token to copy or paste. Requires the server to be configured with a GitHub OAuth App (see <code>.env</code> / README).</p>
+        <p class="hint" id="oauthHint">Opens GitHub to authorize this app — no token to copy or paste. Requires the server to be configured with a GitHub OAuth App (see <code>.env</code> / README).</p>
+        <div class="status" id="connectStatus"></div>
 
         <details class="alt-login">
           <summary>Or use a personal access token instead</summary>
@@ -28,7 +29,7 @@
           <input type="password" id="pat" placeholder="ghp_… or github_pat_…" autocomplete="off" />
           <p class="hint">Needs the <code>repo</code> scope. Stored only in your browser session — never written to disk or sent anywhere except GitHub.</p>
           <button class="btn" id="connectBtn">Connect with token</button>
-          <div class="status" id="connectStatus"></div>
+          <div class="status" id="patStatus"></div>
         </details>
       </div>
 
@@ -66,9 +67,25 @@
           </div>
           <div class="field">
             <label for="llmModel">Model</label>
-            <input type="text" id="llmModel" placeholder="gpt-4o-mini" autocomplete="off" />
+            <input type="text" id="llmModel" list="modelOptions" placeholder="gpt-4o-mini" autocomplete="off" />
+            <datalist id="modelOptions"></datalist>
           </div>
         </div>
+        <div class="row">
+          <button class="btn" type="button" id="detectModelsBtn">Detect models</button>
+          <span class="status" id="detectModelsStatus"></span>
+        </div>
+        <p class="hint">"Detect models" asks the base URL above for its loaded models (e.g. LM Studio) and fills the Model field — nothing is sent to our server for this.</p>
+      </details>
+
+      <details class="card adv">
+        <summary>Threshold</summary>
+        <label for="threshold">Minimum severity to show</label>
+        <select id="threshold">
+          <option value="info">Info and above (everything)</option>
+          <option value="warning" selected>Warning and above</option>
+          <option value="error">Errors only</option>
+        </select>
       </details>
 
       <div class="actions">
